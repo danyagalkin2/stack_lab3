@@ -20,12 +20,13 @@ public:
 	T Pop();
 	void Push(T value);
 	T Top()const;
-	void Clear() {Num = -1;}
+	void Clear() { Num = -1; }
 
 };
 
 template <class T>
 TStack<T>::TStack(int _Maxsize) :Maxsize(_Maxsize) {
+	if (_Maxsize < 1) { throw - 1; }
 	Num = -1;
 	pMem = new T[_Maxsize]{};
 }
@@ -44,7 +45,7 @@ template <class T>
 TStack<T>& TStack<T>::operator=(const TStack& s) {
 	if (this == &s)return *this;
 	if (Maxsize != s.Maxsize) {
-		delete []pMem;
+		delete[]pMem;
 		Maxsize = s.Maxsize;
 		pMem = new T[Maxsize];
 	}
@@ -108,7 +109,7 @@ bool Check(string str)
 {
 	TStack <char>s;
 	for (int i = 0; i < str.size(); i++) {
-		if (str[i] == '(' )s.Push('(');
+		if (str[i] == '(')s.Push('(');
 		if (str[i] == ')') {
 			if (!s.isEmpty()) {
 				s.Pop();
@@ -153,49 +154,51 @@ int precedence(char op)
 	return 0;
 }
 void TCalc::ToPostfix() {
-    TStack<char> st;
-    string postfix = "";
-    for (int i = 0; i < infix.length(); i++) {
-        char c = infix[i];
+	TStack<char> st;
+	string postfix = "";
+	for (int i = 0; i < infix.length(); i++) {
+		char c = infix[i];
 
-        // If the scanned character is an operand, add it to
-        // output string.
-        if ('0' <= c && c <= '9')
-            postfix += c;
+		// если символ €вл€етс€ операндом,
+		//  добавл€ем его в строку
+		if ('0' <= c && c <= '9')
+			postfix += c;
 
-        // If the scanned character is an '(', push it to
-        // the stack.
-        else if (c == '(')
-            st.Push('(');
+		// если символ равен '(',
+		//  помещаем его в стек.
+		else if (c == '(')
+			st.Push('(');
 
-        // If the scanned character is an ')', pop and to
-        // output string from the stack until an '(' is
-        // encountered.
-        else if (c == ')') {
-            while (st.Top() != '(') {
-                postfix += st.Top();
-                st.Pop();
-            }
-            st.Pop();
-        }
+		// если символом €вл€етс€ ')',
+		//  извлекаем строку из стека и добавл€ем 
+		// в результирующую строку,
+		//  пока не встретитс€ '('
+		else if (c == ')') {
+			while (st.Top() != '(') {
+				postfix += st.Top();
+				st.Pop();
+			}
+			st.Pop();
+		}
 
-        // If an operator is scanned
-        else {
-            while (!st.isEmpty() && precedence(c) <= precedence(st.Top())) {
-                postfix += st.Top();
-                st.Pop();
-            }
-            st.Push(c);
-        }
-    }
+		// иначе это оператор и мы его сканируем
+		//  с учетом приоретета
+		else {
+			while (!st.isEmpty() && precedence(c) <= precedence(st.Top())) {
+				postfix += st.Top();
+				st.Pop();
+			}
+			st.Push(c);
+		}
+	}
 
-    // Pop all the remaining elements from the stack
-    while (!st.isEmpty()) {
-        postfix += st.Top();
-        st.Pop();
-    }
+	// извлекаем все элементы из стека в строку
+	while (!st.isEmpty()) {
+		postfix += st.Top();
+		st.Pop();
+	}
 
-    this->setPostfix(postfix);
+	this->setPostfix(postfix);
 }
 
 double TCalc::CalcPostfix() {
