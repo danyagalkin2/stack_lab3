@@ -151,62 +151,78 @@ int precedence(char op)
 		return 1;
 	if (op == '*' || op == '/')
 		return 2;
+	if (op == '^')
+		return 3;
 	return 0;
 }
+int str_to_int(string s) {
+	int res = 0;
+	for (int i = 0; i < s.length(); i++) {
+		res = res * 10 + (s[i] - '0');
+	}
+	return res;
+}
 void TCalc::ToPostfix() {
-	TStack<char> st;
-	string postfix = "";
-	for (int i = 0; i < infix.length(); i++) {
-		char c = infix[i];
-
+	postfix = "";
+	string s = "(" + infix + ")";
+	StChar.Clear();
+	for (int i = 0; i < s.length(); i++) {
+		
 		// если символ €вл€етс€ операндом,
 		//  добавл€ем его в строку
-		if ('0' <= c && c <= '9')
-			postfix += c;
+		if ('0' <= s[i] && s[i] <= '9')
+			postfix += s[i];
 
 		// если символ равен '(',
 		//  помещаем его в стек.
-		else if (c == '(')
-			st.Push('(');
+		else if (s[i] == '(')
+			StChar.Push('(');
 
 		// если символом €вл€етс€ ')',
 		//  извлекаем строку из стека и добавл€ем 
 		// в результирующую строку,
 		//  пока не встретитс€ '('
-		else if (c == ')') {
-			while (st.Top() != '(') {
-				postfix += st.Top();
-				st.Pop();
+		else if (s[i] == ')') {
+			while (StChar.Top() != '(') {
+				postfix += " ";
+				postfix += StChar.Top();
+				StChar.Pop();
+				
 			}
-			st.Pop();
+			StChar.Pop();
 		}
 
-		// иначе это оператор и мы его сканируем
-		//  с учетом приоретета
 		else {
-			while (!st.isEmpty() && precedence(c) <= precedence(st.Top())) {
-				postfix += st.Top();
-				st.Pop();
+			postfix += " ";
+			while (!StChar.isEmpty() && precedence(s[i]) <= precedence(StChar.Top())) {
+				postfix += StChar.Top() ;
+				StChar.Pop();
+				postfix += " ";
 			}
-			st.Push(c);
+			StChar.Push(s[i]);
 		}
 	}
 
-	// извлекаем все элементы из стека в строку
-	while (!st.isEmpty()) {
-		postfix += st.Top();
-		st.Pop();
-	}
+	//// извлекаем все элементы из стека в строку
+	//while (!StChar.isEmpty()) {
+	//	postfix += StChar.Top();
+	//	StChar.Pop();
+	//}
 
-	this->setPostfix(postfix);
 }
 
 double TCalc::CalcPostfix() {
 	StNum.Clear();
 	for (int i = 0; i < postfix.size(); i++) {
-		if ('0' <= postfix[i] && postfix[i] <= '9')
-			StNum.Push(postfix[i] - '0');
-		else if (postfix[i] == '+' || postfix[i] == '-' || postfix[i] == '*' || postfix[i] == '/') {
+		if ('0' <= postfix[i] && postfix[i] <= '9') {
+			string s = "";
+			while ('0' <= postfix[i] && postfix[i] <= '9') {
+				s += postfix[i];
+				i++;
+			}
+			StNum.Push(str_to_int(s));
+		}
+		else if (postfix[i] == '+' || postfix[i] == '-' || postfix[i] == '*' || postfix[i] == '/' || postfix[i] == '^') {
 			double SecondNum = StNum.Pop();
 			double FirstNum = StNum.Pop();
 			if (postfix[i] == '+')
@@ -217,6 +233,8 @@ double TCalc::CalcPostfix() {
 				StNum.Push(FirstNum * SecondNum);
 			else if (postfix[i] == '/')
 				StNum.Push(FirstNum / SecondNum);
+			else 
+				StNum.Push(pow(FirstNum,SecondNum));
 		}
 	}
 	double result = StNum.Pop();
