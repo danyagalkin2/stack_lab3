@@ -15,12 +15,13 @@ public:
 	TStack(const TStack& s);
 	~TStack();
 	TStack& operator=(const TStack& s);
-	bool operator==(const TStack& s);
-	bool operator!=(const TStack& s);
+	bool operator==(const TStack& s)const;
+	bool operator!=(const TStack& s)const;
 	T Pop();
 	void Push(T value);
 	T Top()const;
 	void Clear() { Num = -1; }
+
 
 };
 
@@ -42,7 +43,7 @@ TStack<T>::TStack(const TStack& s) {
 }
 
 template <class T>
-TStack<T>& TStack<T>::operator=(const TStack& s) {
+TStack<T>& TStack<T>::operator=(const TStack& s){
 	if (this == &s)return *this;
 	if (Maxsize != s.Maxsize) {
 		delete[]pMem;
@@ -57,11 +58,11 @@ TStack<T>& TStack<T>::operator=(const TStack& s) {
 }
 
 template <class T>
-bool TStack<T>::operator==(const TStack& s) {
+bool TStack<T>::operator==(const TStack& s)const {
 	if (this == &s)return true;
 	if (Num != s.Num)return false;
 	for (int i = 0; i <= Num; i++) {
-		if (pMem[i] != s.pMem) {
+		if (pMem[i] != s.pMem[i]) {
 			return false;
 		}
 	}
@@ -69,7 +70,7 @@ bool TStack<T>::operator==(const TStack& s) {
 }
 
 template <class T>
-bool TStack<T>::operator!=(const TStack& s) {
+bool TStack<T>::operator!=(const TStack& s) const{
 	return !(*this == s);
 }
 
@@ -104,6 +105,8 @@ T TStack<T>::Top()const {
 	if (this->isEmpty()) throw - 1;
 	return pMem[Num];
 }
+
+
 
 bool Check(string str)
 {
@@ -144,6 +147,13 @@ public:
 	void ToPostfix();
 	double CalcPostfix();
 	double Calc();
+	bool CurrentCharIsDigit(char c);
+	size_t ProcessNumber(const string& str, size_t index);
+	void ProcessClosingBracket();
+	void ProcessOperator(char oper);
+	double ApplyOperation(double num1, double num2, char oper);
+	void HandleUnaryMinus(const string& str, size_t& index);
+	bool IsOperator(char c);
 };
 int precedence(char op)
 {
@@ -244,4 +254,98 @@ double TCalc::CalcPostfix() {
 	else {
 		throw - 1;
 	}
+
+
+}
+double TCalc::Calc() {
+	string str = "(" + infix + ")";
+	StNum.Clear();
+	StChar.Clear();
+
+	if (!Check(infix)) {
+		throw -1;
+	}
+
+	for (size_t i = 0; i < str.size(); ++i) {
+		char currentChar = str[i];
+
+		if (currentChar == '(') {
+			StChar.Push(currentChar);
+		}
+		else if (CurrentCharIsDigit(currentChar) || currentChar == '.') {
+			i = ProcessNumber(str, i);
+		}
+		else if (currentChar == ')') {
+			ProcessClosingBracket();
+		}
+		else if (IsOperator(currentChar)) {
+			ProcessOperator(currentChar);
+		}
+		else if (currentChar == '-') {
+			HandleUnaryMinus(str, i);
+		}
+	}
+
+	double result = StNum.Pop();
+	if (!StNum.isEmpty()) {
+		throw -1;
+	}
+	return result;
+}
+
+bool TCalc::CurrentCharIsDigit(char c) {
+	return (c >= '0' && c <= '9');
+}
+
+size_t TCalc::ProcessNumber(const string& str, size_t index) {
+	size_t idx;
+	double num = stod(&str[index], &idx);
+	StNum.Push(num);
+	return index + idx - 1;
+}
+
+void TCalc::ProcessClosingBracket() {
+	while (StChar.Top() != '(') {
+		double Num2 = StNum.Pop();
+		double Num1 = StNum.Pop();
+		char oper = StChar.Pop();
+		StNum.Push(ApplyOperation(Num1, Num2, oper));
+	}
+	StChar.Pop(); // Remove '('
+}
+
+void TCalc::ProcessOperator(char oper) {
+	while (!StChar.isEmpty() && precedence(StChar.Top()) >= precedence(oper)) {
+		double Num2 = StNum.Pop();
+		double Num1 = StNum.Pop();
+		char topOper = StChar.Pop();
+		StNum.Push(ApplyOperation(Num1, Num2, topOper));
+	}
+	StChar.Push(oper);
+}
+
+double TCalc::ApplyOperation(double num1, double num2, char oper) {
+	switch (oper) {
+	case '+': return num1 + num2;
+	case '-': return num1 - num2;
+	case '*': return num1 * num2;
+	case '/':
+		if (num2 == 0) throw -1;
+		return num1 / num2;
+	case '^': return pow(num1, num2);
+	}
+}
+
+void TCalc::HandleUnaryMinus(const string& str, size_t& index) {
+	if (index == 0 || str[index - 1] == '(') {
+		index++; // Пропускаем '-' и продолжаем
+		index = ProcessNumber(str, index); // Обрабатываем число после минуса
+		double num = -StNum.Pop(); // Берем число и меняем знак
+
+		StNum.Push(num);
+	}
+}
+
+bool TCalc::IsOperator(char c) {
+	return c == '+' || c == '-' || c == '*' || c == '/' || c == '^';
 }
